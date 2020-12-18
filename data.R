@@ -1,18 +1,47 @@
 library(tidyverse)
 
-District <- 102
+districts <- c('51', '102')
+default_district <- '102'
+time_zone <- 'Etc/GMT-12'
+color <- '#CD202C'
 
-obtain_data_clubs <- function(District = 102) {
-    ClubsURL <- paste0('http://dashboards.toastmasters.org/export.aspx?type=CSV&report=clubperformance~', District)
-    df <- read.csv(ClubsURL)
-    write.csv(df, paste0('clubs-', District, '.csv'), row.names = FALSE)
+get_filename <- function(district) {
+    return(paste0('clubs-', district, '-', substr(strptime(format(Sys.time(), tz = time_zone), '%Y-%m-%d'), 1, 12), '.csv'))
 }
 
-load_data_clubs <- function() {
-    df <- read.csv(paste0('clubs-', District, '.csv'))
+obtain_data_clubs <- function(district) {
+    ClubsURL <- paste0('http://dashboards.toastmasters.org/export.aspx?type=CSV&report=clubperformance~', district)
+    df <- read.csv(ClubsURL)
     df <- df[-nrow(df), ]
+    
+    filename <- get_filename(district)
+    write.csv(df, filename, row.names = FALSE)
+    print(paste0('Saving ', filename))
+    
+    return(df)
+}
+
+load_data_clubs <- function(district) {
+    if (is.null(district)) {
+        district <- default_district
+    }
+    
+    filename <- get_filename(district)
+    
+    if (file.exists(filename)) {
+        df <- read.csv(filename)
+        print(paste0('Reading from local ', filename))
+    }
+    else {
+        df <- obtain_data_clubs(district)
+        print(paste0('Reading from source ', filename))
+    }
+    
     colnames(df) <- c('District', 'Division', 'Area', 'Number', 'Club', 'Status', 'Base', 'Members', 'Goals', 'Edu1', 'Edu2', 'Edu3', 'Edu4', 'Edu5', 'Edu6', 'Mem1', 'Mem2', 'Train1', 'Train2', 'Due1', 'Due2', 'List', 'Distinguished')
 
+    df$Status <- as.factor(df$Status)
+    levels(df$Status) <- c('Active', 'Low', 'Ineligible', 'Suspended')
+    
     df$Distinguished <- replace_na(df$Distinguished, 'Not Yet')
     df$Distinguished <- as.factor(df$Distinguished)
     levels(df$Distinguished) <- c('Not Yet', 'Distinguished', 'Select Distinguished', 'President\'s Distinguished')
@@ -21,7 +50,7 @@ load_data_clubs <- function() {
         mutate(
             Area = paste0(Division, Area),
             Number = str_pad(Number, width = 7, pad = '0'),
-            # Club = paste0(Name, ' (', Number, ')'),
+            Growth = Members - Base,
             Renewals = Due1 + Due2,
             EduGoals = CountEduGoals(Edu1, Edu2, Edu3, Edu4, Edu5, Edu6),
             MemGoals = CountMemGoals(Mem1, Mem2),
@@ -29,10 +58,6 @@ load_data_clubs <- function() {
             AdmGoals = CountAdmGoals(Due1, Due2, List),
             URL = paste0('https://www.toastmasters.org/Find-a-Club/', Number)
         )
-
-    df$District <- as.factor(df$District)
-    df$Division <- as.factor(df$Division)
-    df$Area <- as.factor(df$Area)
 
     row.names(df) <- df$Number
     return(df)
@@ -58,9 +83,3 @@ CountAdmGoals <- function(Due1, Due2, List) {
     return(Goals)
 }
 
-# sum(is.na(df$Distinguished))
-# 
-# head(df)
-# tail(df)
-# 
-# str(df)
