@@ -2,8 +2,17 @@ library(tidyverse)
 library(shiny)
 library(shinythemes)
 library(DT)
+library(ggplot2)
 
 source('data.R')
+
+ggplot_theme <- theme(
+    plot.title = element_text(face = 'bold', size = 14, hjust = 0.5),
+    axis.title = element_text(face = 'bold'),
+    plot.background = element_blank(),
+    panel.background = element_blank(),
+    panel.grid.major.y = element_line(color = 'grey')
+)
 
 function(input, output, session) {
     values <- reactiveValues(
@@ -76,12 +85,7 @@ function(input, output, session) {
             )
         )
     ) 
-    # %>%
-    # formatStyle(
-    #     'Total Goals',
-    #     fontWeight = 'bold'
-    # )
-    
+
     GetTitle <- function() {
         title <- paste0('District ', values$district)
         
@@ -190,43 +194,12 @@ function(input, output, session) {
     
     tablePerformance <- function(df_clubs, col) {
         df <- data.frame(table(df_clubs[[col]]))
-
+        
         colnames(df) <- c('Performance', 'Number of Clubs')
         df <- df %>%
             mutate(Percentage = sprintf('%.2f%%', df[['Number of Clubs']] / sum(df[['Number of Clubs']]) * 100))
         
         return (df)
-    }
-    
-    tableNumbers <- function(col, units) {
-        df <- load_selected_clubs()
-        x <- df[[col]]
-        
-        x_mean <- mean(x)
-        x_sd <- sd(x)
-        x_min <- min(x)
-        x_q1 <- quantile(x, 0.25)
-        x_median <- median(x)
-        x_min <- min(x)
-        x_q3 <- quantile(x, 0.75)
-        x_max <- max(x)
-        
-        text_mean <- sprintf('Clubs achieve an average of %.2f %s.', x_mean, tolower(units))
-        text_sd <- sprintf('Most clubs achieve %.2f plus/minus %.2f %s.', x_mean, x_sd, tolower(units))
-        text_min <- sprintf('The lowest performance is %.2f %s.', x_min, tolower(units))
-        text_q1 <- sprintf('The 25th percentile is %.2f %s. 25%% of the clubs achieve less than this number of %s.', x_q1, tolower(units), tolower(units))
-        text_median <- sprintf('The middle performance is %.2f %s.', x_median, tolower(units))
-        text_q3 <- sprintf('The 75th percentile is %.2f %s. 75%% of the clubs achieve less than this number of %s.', x_q3, tolower(units), tolower(units))
-        text_max <- sprintf('The highest performance is %.2f %s.', x_max, tolower(units))
-        
-        table <- data.frame(
-            c('Mean', 'Standard Deviation', 'Minimum', 'Lower Quartile', 'Median', 'Upper Quartile', 'Maximum'),
-            sprintf(paste0('%.2f ', units), c(x_mean, x_sd, x_min, x_q1, x_median, x_q3, x_max)),
-            c(text_mean, text_sd, text_min, text_q1, text_median, text_q3, text_max)
-        )            
-        
-        colnames(table) <- c('Statistic', 'Value', 'Explanation')
-        return (table)
     }
     
     output$education_performance <- renderTable(
@@ -238,111 +211,54 @@ function(input, output, session) {
     )
     
     output$education_barplot <- renderPlot({
-        df <- load_selected_clubs()
-        x <- table(df[['Education Goals']])
-        
-        barplot(
-            x,
-            xlab = 'Education Goals',
-            ylab = 'Number of Clubs',
-            col = color,
-            main = GetChartTitle('Education Goals Achieved')
-        )
+        ggplot(data = load_selected_clubs(), aes(x = `Education Goals`)) +
+            geom_bar(fill = color) +
+            labs(
+                title = GetChartTitle('Education Goals Achieved'),
+                x = 'Education Goals',
+                y = 'Number of Clubs'
+            ) +
+            ggplot_theme
     })
-    
-    output$education_stats <- renderTable(
-        { tableNumbers('Education Goals', 'Goal(s)') },
-        
-        bordered = TRUE,
-        striped = TRUE,
-        hover = TRUE
-    )
-    
-    output$education_boxplot <- renderPlot({
-        df <- load_selected_clubs()
-        x <- df[['Education Goals']]
-        
-        boxplot(x,
-                horizontal = TRUE,
-                xlab = 'Education Goals',
-                col = color,
-                main = GetChartTitle('Distribution of Education Goals Achieved')
-        )
-        
-    })  
     
     output$education_goals <- renderPlot({
-        df <- load_selected_clubs()
-        x <- df[['Education Goals']]
-        y <- df[['Total Goals']]
-        
-        plot(x, y,
-             main = GetChartTitle('Education Goals vs. DCP Goals'),
-             xlab = 'Education Goals',
-             ylab = 'Goals'
-        )
-        
-        lines(lowess(x, y), col = color)
-    })
-    
-    output$education_rank <- renderPlot({
-        df <- load_selected_clubs()
-        x <- df[['Education Goals']]
-        y <- df[['Rank']]
-        
-        plot(x, y,
-             ylim = c(max(y), 1),
-             main = GetChartTitle('Education Goals vs. Club Rank'),
-             xlab = 'Education Goals',
-             ylab = 'Club Rank'
-        )
-        
-        lines(lowess(x, y), col = color)
+        ggplot(data = load_selected_clubs(), aes(x = `Education Goals`, y = `Total Goals`)) +
+            geom_point() +
+            geom_smooth(method = 'loess', formula = y ~ x) +
+            labs(
+                title = GetChartTitle('Education Goals vs. DCP Goals'),
+                x = 'Education Goals',
+                y = 'Total Goals'
+            ) +
+            ggplot_theme
     })
     
     output$members_histogram <- renderPlot({
-        df <- load_selected_clubs()
-        x <- df[['Members']]
-        # breaks <- seq(0, max(x), by = 5)
-        
-        hist(x, breaks = 'sturges',
-             col = color,
-             xlab = 'Number of Members',
-             ylab = 'Number of Clubs',
-             main = GetChartTitle('Club Membership')
-        )
+        ggplot(data = load_selected_clubs(), aes(x = Members)) +
+            geom_bar(fill = color) +
+            scale_x_binned() +
+            labs(
+                title = GetChartTitle('Club Membership'),
+                x = 'Number of Members',
+                y = 'Number of Clubs'
+            ) +
+            ggplot_theme
     })
-    
-    # output$members_performance <- renderTable(
-    #     {
-    #         # df <- load_selected_clubs()
-    #         # x <- df[['Members']]
-    #         # bins <- seq(0, max(x), by = 5)
-    #         # scores <- cut(x, bins)
-    #         # table(scores)
-    #         tablePerformance(load_selected_clubs(), 'Members')
-    #     },
-    #     
-    #     bordered = TRUE,
-    #     striped = TRUE,
-    #     hover = TRUE
-    # )
     
     output$charter_barplot <- renderPlot({
         df <- load_selected_clubs() %>%
             mutate(
                 'Charter Strength' = ifelse(Members >= 20, 'Yes', 'No')
             )
-        
-        x <- table(df[['Charter Strength']])
-        
-        barplot(
-            x,
-            xlab = 'Charter Strength',
-            ylab = 'Number of Clubs',
-            col = color,
-            main = GetChartTitle('Number of Clubs with Charter Strength')
-        )
+
+        ggplot(data = df, aes(x = `Charter Strength`)) +
+            geom_bar(fill = color) +
+            labs(
+                title = GetChartTitle('Number of Clubs with Charter Strength'),
+                x = 'Charter Strength',
+                y = 'Number of Clubs'
+            ) +
+            ggplot_theme
     })
     
     output$charter_performance <- renderTable(
@@ -360,53 +276,16 @@ function(input, output, session) {
         hover = TRUE
     )
     
-    output$members_stats <- renderTable(
-        { tableNumbers('Members', 'Member(s)') },
-        
-        bordered = TRUE,
-        striped = TRUE,
-        hover = TRUE
-    )
-    
-    output$members_boxplot <- renderPlot({
-        df <- load_selected_clubs()
-        x <- df[['Members']]
-        
-        boxplot(x,
-                horizontal = TRUE,
-                xlab = 'Membership Goals',
-                col = color,
-                main = GetChartTitle('Distribution of Membership Size')
-        )
-    })  
-    
     output$members_goals <- renderPlot({
-        df <- load_selected_clubs()
-        x <- df[['Members']]
-        y <- df[['Total Goals']]
-        
-        plot(x, y,
-             main = GetChartTitle('Membership vs. DCP Goals'),
-             xlab = 'Number of Members',
-             ylab = 'Goals'
-        )
-        
-        lines(lowess(x, y), col = color)
-    })
-    
-    output$members_rank <- renderPlot({
-        df <- load_selected_clubs()
-        x <- df[['Members']]
-        y <- df[['Rank']]
-        
-        plot(x, y,
-             ylim = c(max(y), 1),
-             main = GetChartTitle('Membership vs. Club Rank'),
-             xlab = 'Number of Members',
-             ylab = 'Club Rank'
-        )
-        
-        lines(lowess(x, y), col = color)
+        ggplot(data = load_selected_clubs(), aes(x = Members, y = `Total Goals`)) +
+            geom_point() +
+            geom_smooth(method = 'loess', formula = y ~ x) +
+            labs(
+                title = GetChartTitle('Membership vs. DCP Goals'),
+                x = 'Number of Members',
+                y = 'Total Goals'
+            ) +
+            ggplot_theme
     })
     
     output$table_goals <- renderTable(
@@ -418,16 +297,15 @@ function(input, output, session) {
     )
     
     output$goals <- renderPlot({
-        df <- load_selected_clubs()
-        x <- table(df[['Total Goals']])
-        
-        barplot(
-            x,
-            main = GetChartTitle('DCP Goals Achieved'),
-            xlab = 'DPC Goals',
-            ylab = 'Number of Clubs',
-            col = color
-        )
+        ggplot(data = load_selected_clubs(), aes(x = `Total Goals`)) +
+            geom_bar(fill = color) +
+            scale_x_binned() +
+            labs(
+                title = GetChartTitle('DCP Goals Achieved'),
+                x = 'DCP Goals',
+                y = 'Number of Clubs'
+            ) +
+            ggplot_theme
     })
     
     output$table_distinguished <- renderTable(
@@ -439,30 +317,14 @@ function(input, output, session) {
     )
     
     output$distinguished <- renderPlot({
-        df <- load_selected_clubs()
-        x <- table(df[['Distinguished']])
-        
-        barplot(
-            x,
-            main = GetChartTitle('Distinguished Club Status'),
-            xlab = 'Distinguished Club Status',
-            ylab = 'Number of Clubs',
-            col = color
-        )
-    })
-    
-    output$goals_rank <- renderPlot({
-        df <- load_selected_clubs()
-        x <- df[['Total Goals']]
-        y <- df[['Rank']]
-        
-        plot(x, y,
-             ylim = c(max(y), 1),
-             main = GetChartTitle('DCP Goals vs. Club Rank'),
-             xlab = 'Total Goals Achieved',
-             ylab = 'Club Rank'
-        )
-        
-        lines(lowess(x, y), col = color)
+        ggplot(data = load_selected_clubs(), aes(x = Distinguished)) +
+            geom_bar(fill = color) +
+            scale_x_discrete(drop = FALSE) +
+            labs(
+                title = GetChartTitle('Distinguished Club Status'),
+                x = 'Distinguished Club Status',
+                y = 'Number of Clubs'
+            ) +
+            ggplot_theme
     })
 }
