@@ -33,56 +33,101 @@ ui <- fluidPage(
             actionButton('showall', 'Show All Clubs')
         )
     ),
-
+    
     tabsetPanel(
         tabPanel(
             'Clubs', 
             DTOutput('clubs', width = '98%')
         ),
+        
         tabPanel(
             'Education',
-
-            h3('Education Goals'),
-            plotOutput('education_barplot'),
-            tableOutput('education_performance'),
-            hr(),
             
-            h3('Connecting to DCP Goals'),
-            plotOutput('education_goals')
+            tabsetPanel(
+                tabPanel(
+                    'Education Goals',
+                    h3('Education Goals'),
+                    plotOutput('education_barplot'),
+                    tableOutput('education_performance')
+                ),
+                tabPanel(
+                    'Club Goals',
+                    h3('Relating to Club Goals'),
+                    plotOutput('education_goals')
+                )
+            )
         ),
+        
         tabPanel(
             'Membership',
-
-            h3('Club Membership'),
-            plotOutput('members_histogram'),
-            hr(),
             
-            h3('Charter Strength'),
-            plotOutput('charter_barplot'),
-            tableOutput('charter_performance'),
-            hr(),
-            
-            h3('Connecting to DCP Goals'),
-            plotOutput('members_goals')
+            tabsetPanel(
+                tabPanel(
+                    'Club Membership',
+                    h3('Club Membership'),
+                    plotOutput('members_histogram')
+                ),
+                tabPanel(
+                    'Charter Strength',
+                    h3('Charter Strength'),
+                    plotOutput('charter_barplot'),
+                    tableOutput('charter_performance')
+                ),
+                tabPanel(
+                    'Club Goals',
+                    h3('Relating to Club Goals'),
+                    plotOutput('members_goals')
+                )
+            )
         ),
+        
         tabPanel(
             'Achievements',
-
-            h3('Club Goals'),
-            plotOutput('goals'),
-            tableOutput('table_goals'),
-            hr(),
             
-            h3('Distinguished Clubs'),
-            plotOutput('distinguished'),
-            tableOutput('table_distinguished')
+            tabsetPanel(
+                tabPanel(
+                    'Club Goals',
+                    h3('Club Goals'),
+                    plotOutput('goals'),
+                    tableOutput('table_goals')
+                ),
+                tabPanel(
+                    'Distinguished Clubs',
+                    h3('Distinguished Clubs'),
+                    plotOutput('distinguished'),
+                    tableOutput('table_distinguished')
+                )
+            )
+        ),
+
+        tabPanel(
+            'Divisions',
+            
+            tabsetPanel(
+                tabPanel(
+                    'Education Goals',    
+                    h3('Education Goals'),
+                    plotOutput('divisions_education')
+                ),
+                tabPanel(
+                    'Membership',
+                    h3('Membership'),
+                    plotOutput('divisions_members')
+                ),
+                tabPanel(
+                    'Total Goals',
+                    h3('Total Goals'),
+                    plotOutput('divisions_goals')
+                ),
+                tabPanel(
+                    'Club Rank',
+                    h3('Club Rank'),
+                    plotOutput('divisions_rank')
+                )
+            )
         )
         # tabPanel(
         #     'Areas',
-        #     h4('This page is still under construction. Please check back later.')
-        # ),
-        # tabPanel(
-        #     'Divisions',
         #     h4('This page is still under construction. Please check back later.')
         # ),
         # tabPanel(

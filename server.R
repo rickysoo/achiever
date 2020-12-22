@@ -85,7 +85,7 @@ function(input, output, session) {
             )
         )
     ) 
-
+    
     GetTitle <- function() {
         title <- paste0('District ', values$district)
         
@@ -99,8 +99,13 @@ function(input, output, session) {
         return (title)
     }
     
-    GetChartTitle <- function(title) {
-        title <- paste0(values$title, ' - ', title, ' as on ', format(Sys.time(), "%B %d, %Y"))
+    GetChartTitle <- function(title, district = FALSE) {
+        if (district) {
+            title <- paste0('District ', values$district, ' - ', title, ' as on ', format(Sys.time(), "%B %d, %Y"))
+        }
+        else {
+            title <- paste0(values$title, ' - ', title, ' as on ', format(Sys.time(), "%B %d, %Y"))
+        }
     }
     
     output$district <- renderUI({
@@ -211,8 +216,8 @@ function(input, output, session) {
     )
     
     output$education_barplot <- renderPlot({
-        ggplot(data = load_selected_clubs(), aes(x = `Education Goals`)) +
-            geom_bar(fill = color) +
+        ggplot(data = load_selected_clubs(), aes(x = factor(`Education Goals`), fill = Division)) +
+            geom_bar() +
             labs(
                 title = GetChartTitle('Education Goals Achieved'),
                 x = 'Education Goals',
@@ -226,16 +231,16 @@ function(input, output, session) {
             geom_point() +
             geom_smooth(method = 'loess', formula = y ~ x) +
             labs(
-                title = GetChartTitle('Education Goals vs. DCP Goals'),
+                title = GetChartTitle('Education Goals and Club Goals'),
                 x = 'Education Goals',
-                y = 'Total Goals'
+                y = 'Club Goals'
             ) +
             ggplot_theme
     })
     
     output$members_histogram <- renderPlot({
-        ggplot(data = load_selected_clubs(), aes(x = Members)) +
-            geom_bar(fill = color) +
+        ggplot(data = load_selected_clubs(), aes(x = Members, fill = Division)) +
+            geom_bar() +
             scale_x_binned() +
             labs(
                 title = GetChartTitle('Club Membership'),
@@ -250,11 +255,11 @@ function(input, output, session) {
             mutate(
                 'Charter Strength' = ifelse(Members >= 20, 'Yes', 'No')
             )
-
-        ggplot(data = df, aes(x = `Charter Strength`)) +
-            geom_bar(fill = color) +
+        
+        ggplot(data = df, aes(x = `Charter Strength`, fill = Division)) +
+            geom_bar() +
             labs(
-                title = GetChartTitle('Number of Clubs with Charter Strength'),
+                title = GetChartTitle('Clubs with Charter Strength'),
                 x = 'Charter Strength',
                 y = 'Number of Clubs'
             ) +
@@ -281,9 +286,9 @@ function(input, output, session) {
             geom_point() +
             geom_smooth(method = 'loess', formula = y ~ x) +
             labs(
-                title = GetChartTitle('Membership vs. DCP Goals'),
+                title = GetChartTitle('Membership and Club Goals'),
                 x = 'Number of Members',
-                y = 'Total Goals'
+                y = 'Club Goals'
             ) +
             ggplot_theme
     })
@@ -297,12 +302,12 @@ function(input, output, session) {
     )
     
     output$goals <- renderPlot({
-        ggplot(data = load_selected_clubs(), aes(x = `Total Goals`)) +
-            geom_bar(fill = color) +
-            scale_x_binned() +
+        ggplot(data = load_selected_clubs(), aes(x = factor(`Total Goals`), fill = Division)) +
+            geom_bar() +
+            # scale_x_binned() +
             labs(
-                title = GetChartTitle('DCP Goals Achieved'),
-                x = 'DCP Goals',
+                title = GetChartTitle('Club Goals Achieved'),
+                x = 'Club Goals',
                 y = 'Number of Clubs'
             ) +
             ggplot_theme
@@ -317,8 +322,8 @@ function(input, output, session) {
     )
     
     output$distinguished <- renderPlot({
-        ggplot(data = load_selected_clubs(), aes(x = Distinguished)) +
-            geom_bar(fill = color) +
+        ggplot(data = load_selected_clubs(), aes(x = Distinguished, fill = Division)) +
+            geom_bar() +
             scale_x_discrete(drop = FALSE) +
             labs(
                 title = GetChartTitle('Distinguished Club Status'),
@@ -326,5 +331,78 @@ function(input, output, session) {
                 y = 'Number of Clubs'
             ) +
             ggplot_theme
+    })
+    
+    output$divisions_education <- renderPlot({
+        df <- load_clubs() %>%
+            group_by(Division) %>%
+            mutate(Median = median(`Education Goals`)) %>%
+            ungroup() %>%
+            arrange(desc(Median))
+        
+        ggplot(data = df, aes(x = Division, y = `Education Goals`, fill = Division)) +
+            geom_boxplot() +
+            labs(
+                title = GetChartTitle('Division Performance on Education Goals', district = TRUE),
+                x = 'Division',
+                y = 'Education Goals'
+            ) +
+            ggplot_theme +
+            theme(legend.position = 'none')
+    })
+    
+    output$divisions_members <- renderPlot({
+        df <- load_clubs() %>%
+            group_by(Division) %>%
+            mutate(Median = median(Members)) %>%
+            ungroup() %>%
+            arrange(desc(Median))
+        
+        ggplot(data = df, aes(x = Division, y = Members, fill = Division)) +
+            geom_boxplot() +
+            labs(
+                title = GetChartTitle('Division Performance on Membership', district = TRUE),
+                x = 'Division',
+                y = 'Membership'
+            ) +
+            ggplot_theme +
+            theme(legend.position = 'none')
+    })
+    
+    output$divisions_goals <- renderPlot({
+        df <- load_clubs() %>%
+            group_by(Division) %>%
+            mutate(Median = median(`Total Goals`)) %>%
+            ungroup() %>%
+            arrange(desc(Median))
+        
+        ggplot(data = df, aes(x = Division, y = `Total Goals`, fill = Division)) +
+            geom_boxplot() +
+            labs(
+                title = GetChartTitle('Division Performance on Total Goals', district = TRUE),
+                x = 'Division',
+                y = 'Total Goals'
+            ) +
+            ggplot_theme +
+            theme(legend.position = 'none')
+    })
+    
+    output$divisions_rank <- renderPlot({
+        df <- load_clubs() %>%
+            group_by(Division) %>%
+            mutate(Median = median(Rank)) %>%
+            ungroup() %>%
+            arrange(desc(Median))
+        
+        ggplot(data = df, aes(x = Division, y = Rank, fill = Division)) +
+            geom_boxplot() +
+            scale_y_reverse() +
+            labs(
+                title = GetChartTitle('Division Performance on Club Rank', district = TRUE),
+                x = 'Division',
+                y = 'Club Rank'
+            ) +
+            ggplot_theme +
+            theme(legend.position = 'none')
     })
 }
