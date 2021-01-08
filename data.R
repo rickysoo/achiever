@@ -1,10 +1,10 @@
 library(tidyverse)
 
-districts <- c('51', '102')
+districts <- c('51', '80', '87', '102')
 default_district <- '102'
 time_zone <- 'Etc/GMT-12'
 color <- '#CD202C'
-
+    
 get_filename <- function(district) {
     return(paste0('clubs-', district, '-', substr(strptime(format(Sys.time(), tz = time_zone), '%Y-%m-%d'), 1, 12), '.csv'))
 }
@@ -82,4 +82,3 @@ CountAdmGoals <- function(Due1, Due2, List) {
     Goals <- as.integer((Due1 + Due2 >= 1) & (List >= 1))
     return(Goals)
 }
-

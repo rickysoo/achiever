@@ -1,15 +1,18 @@
 library(tidyverse)
 library(shiny)
 library(shinythemes)
+library(shinycustomloader)
 library(DT)
 library(ggplot2)
+library(plotly)
+
+KPIs <- c('Members', 'Net Growth', 'Education Goals', 'Total Goals')
 
 ui <- fluidPage(
     theme = shinytheme('united'),
     
-    titlePanel(textOutput('district_title'), windowTitle = 'Achiever\'s Dashboard | Interactive Toastmasters Dashboard'),
-    p('Your visual and interactive Toastmasters dashboard. Best viewed in computer browser.', br(), 'Work-in-progress. Send your feedback to ricky [at] rickysoo.com'),
-    p(),
+    titlePanel(textOutput('district_title'), windowTitle = 'Achiever\'s Dashboard | Interactive Toastmasters Dashboard For Data Analysis'),
+    p('Your visual and interactive Toastmasters dashboard for data analysis. Best viewed in computer browser.'),
     hr(),
     
     fluidRow(
@@ -28,7 +31,7 @@ ui <- fluidPage(
         column(
             width = 3,
             tags$head(
-                tags$style(HTML('#showall{background-color:#004165}'))
+                tags$style(HTML('#showall {background-color:#004165}'))
             ),
             actionButton('showall', 'Show All Clubs')
         )
@@ -36,8 +39,80 @@ ui <- fluidPage(
     
     tabsetPanel(
         tabPanel(
+            'Home',
+            withLoader(DTOutput('home', width = '98%'), loader = 'pacman')
+        ),
+        
+        tabPanel(
             'Clubs', 
-            DTOutput('clubs', width = '98%')
+
+            fluidRow(
+                column(
+                    width = 6
+                ),
+                column(
+                    width = 3,
+                    selectInput(
+                        inputId = 'clubs_yaxis',
+                        label = NULL,
+                        choices = KPIs,
+                        selected = 'Net Growth'
+                    )
+                ),
+                column(
+                    width = 3,
+                    selectInput(
+                        inputId = 'clubs_xaxis',
+                        label = NULL,
+                        choices = KPIs,
+                        selected = 'Total Goals'
+                    )
+                )
+            ),
+            
+            withLoader(plotlyOutput('clubs_performance', width = '98%'), loader = 'pacman')
+        ),
+        
+        tabPanel(
+            'Areas',
+
+            fluidRow(
+                column(
+                    width = 9
+                ),
+                column(
+                    width = 3,
+                    selectInput(
+                        inputId = 'areas_yaxis',
+                        label = NULL,
+                        choices = KPIs,
+                        selected = 'Total Goals'
+                    )
+                )
+            ),
+            
+            withLoader(plotlyOutput('areas_performance', width = '98%'), loader = 'pacman')
+        ),
+        
+        tabPanel(
+            'Divisions',
+
+            fluidRow(
+                column(
+                    width = 9
+                ),
+                column(
+                    width = 3,
+                    selectInput(
+                        inputId = 'divisions_yaxis',
+                        label = NULL,
+                        choices = KPIs,
+                        selected = 'Total Goals'
+                    )
+                )
+            ),
+            
+            withLoader(plotlyOutput('divisions_performance', width = '98%'), loader = 'pacman')
         ),
         
         tabPanel(
@@ -46,13 +121,11 @@ ui <- fluidPage(
             tabsetPanel(
                 tabPanel(
                     'Education Goals',
-                    h3('Education Goals'),
                     plotOutput('education_barplot'),
                     tableOutput('education_performance')
                 ),
                 tabPanel(
                     'Club Goals',
-                    h3('Relating to Club Goals'),
                     plotOutput('education_goals')
                 )
             )
@@ -64,18 +137,15 @@ ui <- fluidPage(
             tabsetPanel(
                 tabPanel(
                     'Club Membership',
-                    h3('Club Membership'),
                     plotOutput('members_histogram')
                 ),
                 tabPanel(
                     'Charter Strength',
-                    h3('Charter Strength'),
                     plotOutput('charter_barplot'),
                     tableOutput('charter_performance')
                 ),
                 tabPanel(
                     'Club Goals',
-                    h3('Relating to Club Goals'),
                     plotOutput('members_goals')
                 )
             )
@@ -87,68 +157,39 @@ ui <- fluidPage(
             tabsetPanel(
                 tabPanel(
                     'Club Goals',
-                    h3('Club Goals'),
                     plotOutput('goals'),
                     tableOutput('table_goals')
                 ),
                 tabPanel(
                     'Distinguished Clubs',
-                    h3('Distinguished Clubs'),
                     plotOutput('distinguished'),
                     tableOutput('table_distinguished')
                 )
             )
-        ),
-
-        tabPanel(
-            'Divisions',
-            
-            tabsetPanel(
-                tabPanel(
-                    'Education Goals',    
-                    h3('Education Goals'),
-                    plotOutput('divisions_education')
-                ),
-                tabPanel(
-                    'Membership',
-                    h3('Membership'),
-                    plotOutput('divisions_members')
-                ),
-                tabPanel(
-                    'Total Goals',
-                    h3('Total Goals'),
-                    plotOutput('divisions_goals')
-                ),
-                tabPanel(
-                    'Club Rank',
-                    h3('Club Rank'),
-                    plotOutput('divisions_rank')
-                )
-            )
         )
-        # tabPanel(
-        #     'Areas',
-        #     h4('This page is still under construction. Please check back later.')
-        # ),
-        # tabPanel(
-        #     'Grouping',
-        #     h4('This page is still under construction. Please check back later.')
-        # ),
-        # tabPanel(
-        #     'Forecast',
-        #     h4('This page is still under construction. Please check back later.')
-        # ),
-        # tabPanel(
-        #     'Time Machine',
-        #     h4('This page is still under construction. Please check back later.')
-        # ),
-        # tabPanel(
-        #     'Feedback',
-        #     h4('This page is still under construction. Please check back later.')
-        # )
+        
     ),
     
     hr(),
-    textOutput('datetime'),
+    p(
+        a('Data source: Toastmasters International Dashboard', href = 'http://dashboards.toastmasters.org', target = '_blank')
+    ),
     p('This site is neither authorized nor endorsed by Toastmasters International.')
 )
+
+# tabPanel(
+#     'Grouping',
+#     h4('This page is still under construction. Please check back later.')
+# ),
+# tabPanel(
+#     'Forecast',
+#     h4('This page is still under construction. Please check back later.')
+# ),
+# tabPanel(
+#     'Time Machine',
+#     h4('This page is still under construction. Please check back later.')
+# ),
+# tabPanel(
+#     'Feedback',
+#     h4('This page is still under construction. Please check back later.')
+# )
