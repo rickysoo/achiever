@@ -37,17 +37,19 @@ function(input, output, session) {
         
         df <- df %>%
             mutate(
-                Rank = seq.int(nrow(df))
+                Rank = seq.int(nrow(df)),
+                Retention = round(Retention, 2)
             ) %>%
             select(
                 'Division',
                 'Area',
                 'Club',
                 'Base',
-                'New Members' = 'NewMembers',
-                'Lost Members' = 'LostMembers',
-                'Net Growth' = 'Growth',
+                'Retained',
+                'Retention',
+                'New',
                 'Members',
+                'Growth',
                 'Education Goals' = 'EduGoals',
                 'Membership Goals' = 'MemGoals',
                 'Training Goals' = 'TrnGoals',
@@ -62,35 +64,37 @@ function(input, output, session) {
     
     load_selected_clubs <- reactive({
         load_clubs() %>%
-        { if (values$division == '') filter(., TRUE) else filter(., Division == values$division) } %>%
-        { if (values$area == '') filter(., TRUE) else filter(., Area == values$area) }
+            { if (values$division == '') filter(., TRUE) else filter(., Division == values$division) } %>%
+            { if (values$area == '') filter(., TRUE) else filter(., Area == values$area) }
     })  
     
-    output$home <- renderDT(
-        { load_selected_clubs() },
-        
-        rownames = FALSE,
-        class = 'cell-border compact stripe',
-        extensions = c('Responsive'),
-        
-        options = list(
-            pageLength = 10,
-            lengthMenu = list(
-                c(10, 20, 30, 50, 100, nrow(load_clubs())),
-                c(10, 20, 30, 50, 100, nrow(load_clubs()))
-            ),
-            columnDefs = list(
-                list(
-                    className = 'dt-left',
-                    targets = 2
-                ),
-                list(
-                    className = 'dt-center',
-                    targets = c(0:1, 3:10)
+    output$home <- renderDT({
+            datatable(
+                load_selected_clubs(),
+                rownames = FALSE,
+                class = 'cell-border compact stripe',
+                extensions = c('Responsive'),
+
+                options = list(
+                    pageLength = 10,
+                    lengthMenu = list(
+                        c(10, 20, 30, 50, 100, nrow(load_clubs())),
+                        c(10, 20, 30, 50, 100, nrow(load_clubs()))
+                    ),
+                    columnDefs = list(
+                        list(
+                            className = 'dt-left',
+                            targets = 2
+                        ),
+                        list(
+                            className = 'dt-center',
+                            targets = c(0:1, 3:10)
+                        )
+                    )
                 )
-            )
-        )
-    ) 
+            ) %>%
+                formatPercentage(c('Retention'), 1)
+    }) 
     
     output$clubs_performance <- renderPlotly({
         xaxis <- input$clubs_xaxis
@@ -99,8 +103,8 @@ function(input, output, session) {
         viz <- ggplot(data = load_selected_clubs(), aes(x = .data[[xaxis]], y = .data[[yaxis]], label = Club)) +
             geom_point(aes(color = Division, size = Members), alpha = 0.7, position = 'jitter') +
             labs(
-                x = xaxis,
-                y = yaxis
+                x = getKPIname(xaxis),
+                y = getKPIname(yaxis)
             ) +
             guides(
                 size = FALSE
@@ -120,7 +124,7 @@ function(input, output, session) {
     output$areas_performance <- renderPlotly({
         data <- load_selected_clubs()
         yaxis <- input$areas_yaxis
-
+        
         viz <- ggplot(data = data, aes(x = reorder(Area, .data[[yaxis]], FUN = mean), y = .data[[yaxis]], fill = Area)) +
             geom_boxplot() +
             labs(
@@ -267,7 +271,9 @@ function(input, output, session) {
         updateSelectInput(session, inputId = 'division', selected = '')
         updateSelectInput(session, inputId = 'area', selected = '')
         
-        clearSearch(proxy = dataTableProxy('clubs'))
+        proxy <- dataTableProxy('home')
+        clearSearch(proxy = proxy)
+        # replaceData(proxy = proxy, data = load_clubs(), resetPaging = TRUE, clearSelection = FALSE)
     })
     
     tablePerformance <- function(df_clubs, col) {
@@ -458,7 +464,7 @@ function(input, output, session) {
             ggplot_defaults +
             theme(legend.position = 'none')
     })
-
+    
     output$areas_education <- renderPlot({
         ggplot(data = load_clubs(), aes(x = reorder(Area, `Education Goals`, FUN = mean), y = `Education Goals`, fill = Area)) +
             geom_boxplot() +

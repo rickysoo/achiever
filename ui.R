@@ -6,7 +6,7 @@ library(DT)
 library(ggplot2)
 library(plotly)
 
-KPIs <- c('Members', 'New Members', 'Net Growth', 'Education Goals', 'Total Goals')
+source('data.R')
 
 ui <- fluidPage(
     theme = shinytheme('united'),
@@ -59,7 +59,7 @@ ui <- fluidPage(
                     selectInput(
                         inputId = 'clubs_yaxis',
                         label = NULL,
-                        choices = KPIs,
+                        choices = setNames(KPI$Variable, KPI$Name),
                         selected = 'Net Growth'
                     )
                 ),
@@ -68,7 +68,7 @@ ui <- fluidPage(
                     selectInput(
                         inputId = 'clubs_xaxis',
                         label = NULL,
-                        choices = KPIs,
+                        choices = setNames(KPI$Variable, KPI$Name),
                         selected = 'Total Goals'
                     )
                 )
@@ -91,7 +91,7 @@ ui <- fluidPage(
                     selectInput(
                         inputId = 'areas_yaxis',
                         label = NULL,
-                        choices = KPIs,
+                        choices = setNames(KPI$Variable, KPI$Name),
                         selected = 'Total Goals'
                     )
                 )
@@ -114,7 +114,7 @@ ui <- fluidPage(
                     selectInput(
                         inputId = 'divisions_yaxis',
                         label = NULL,
-                        choices = KPIs,
+                        choices = setNames(KPI$Variable, KPI$Name),
                         selected = 'Total Goals'
                     )
                 )

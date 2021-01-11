@@ -4,7 +4,18 @@ districts <- c('51', '80', '87', '102')
 default_district <- '102'
 time_zone <- 'Etc/GMT-12'
 color <- '#CD202C'
-    
+
+KPI <- data.frame(
+    Variable = c('Members', 'Retained', 'Retention', 'New', 'Growth', 'Education Goals', 'Total Goals'),
+    Name = c('Members', 'Retained Members', 'Retention', 'New Members', 'Net Growth', 'Education Goals', 'Total Goals')
+)    
+
+getKPIname <- function(var) {
+    KPI %>% 
+        filter(Variable == var) %>%
+        pull(Name)
+}
+
 get_filename <- function(district) {
     return(paste0('clubs-', district, '-', substr(strptime(format(Sys.time(), tz = time_zone), '%Y-%m-%d'), 1, 12), '.csv'))
 }
@@ -50,9 +61,10 @@ load_data_clubs <- function(district) {
         mutate(
             Area = paste0(Division, Area),
             Number = str_pad(Number, width = 7, pad = '0'),
+            New = Mem1 + Mem2,
+            Retained = Members - New,
+            Retention = ifelse(Base == 0, 0, Retained / Base),
             Growth = Members - Base,
-            NewMembers = Mem1 + Mem2,
-            LostMembers = Base + NewMembers -  Members,
             Renewals = Due1 + Due2,
             EduGoals = CountEduGoals(Edu1, Edu2, Edu3, Edu4, Edu5, Edu6),
             MemGoals = CountMemGoals(Mem1, Mem2),
