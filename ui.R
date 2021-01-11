@@ -6,7 +6,7 @@ library(DT)
 library(ggplot2)
 library(plotly)
 
-KPIs <- c('Members', 'Net Growth', 'Education Goals', 'Total Goals')
+KPIs <- c('Members', 'New Members', 'Net Growth', 'Education Goals', 'Total Goals')
 
 ui <- fluidPage(
     theme = shinytheme('united'),
@@ -40,15 +40,19 @@ ui <- fluidPage(
     tabsetPanel(
         tabPanel(
             'Home',
+            br(),
+            
             withLoader(DTOutput('home', width = '98%'), loader = 'pacman')
         ),
         
         tabPanel(
             'Clubs', 
-
+            
+            br(),
             fluidRow(
                 column(
-                    width = 6
+                    width = 6,
+                    p('View clubs on', align = 'right')
                 ),
                 column(
                     width = 3,
@@ -75,10 +79,12 @@ ui <- fluidPage(
         
         tabPanel(
             'Areas',
-
+            
+            br(),
             fluidRow(
                 column(
-                    width = 9
+                    width = 9,
+                    p('View areas on', align = 'right')
                 ),
                 column(
                     width = 3,
@@ -96,10 +102,12 @@ ui <- fluidPage(
         
         tabPanel(
             'Divisions',
-
+            
+            br(),
             fluidRow(
                 column(
-                    width = 9
+                    width = 9,
+                    p('View divisions on', align = 'right')
                 ),
                 column(
                     width = 3,

@@ -51,6 +51,8 @@ load_data_clubs <- function(district) {
             Area = paste0(Division, Area),
             Number = str_pad(Number, width = 7, pad = '0'),
             Growth = Members - Base,
+            NewMembers = Mem1 + Mem2,
+            LostMembers = Base + NewMembers -  Members,
             Renewals = Due1 + Due2,
             EduGoals = CountEduGoals(Edu1, Edu2, Edu3, Edu4, Edu5, Edu6),
             MemGoals = CountMemGoals(Mem1, Mem2),

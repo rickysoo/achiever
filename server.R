@@ -43,8 +43,11 @@ function(input, output, session) {
                 'Division',
                 'Area',
                 'Club',
-                'Members',
+                'Base',
+                'New Members' = 'NewMembers',
+                'Lost Members' = 'LostMembers',
                 'Net Growth' = 'Growth',
+                'Members',
                 'Education Goals' = 'EduGoals',
                 'Membership Goals' = 'MemGoals',
                 'Training Goals' = 'TrnGoals',
@@ -94,7 +97,7 @@ function(input, output, session) {
         yaxis <- input$clubs_yaxis
         
         viz <- ggplot(data = load_selected_clubs(), aes(x = .data[[xaxis]], y = .data[[yaxis]], label = Club)) +
-            geom_point(aes(color = Division, size = Members), alpha = 0.7) +
+            geom_point(aes(color = Division, size = Members), alpha = 0.7, position = 'jitter') +
             labs(
                 x = xaxis,
                 y = yaxis
@@ -108,6 +111,8 @@ function(input, output, session) {
         ggplotly(viz, height = 600) %>%
             layout(
                 title = GetChartTitle('Club Performance'),
+                xaxis = list(fixedrange = TRUE),
+                yaxis = list(fixedrange = TRUE),
                 margin = 50
             )
     })
@@ -129,6 +134,8 @@ function(input, output, session) {
         ggplotly(viz, height = nrow(data) * 10 + 250) %>%
             layout(
                 title = GetChartTitle('Area Performance'),
+                xaxis = list(fixedrange = TRUE),
+                yaxis = list(fixedrange = TRUE),
                 margin = 50
             )
     })
@@ -150,6 +157,8 @@ function(input, output, session) {
         ggplotly(viz, height = nrow(data) * 2 + 250) %>%
             layout(
                 title = GetChartTitle('Division Performance'),
+                xaxis = list(fixedrange = TRUE),
+                yaxis = list(fixedrange = TRUE),
                 margin = 50
             )
     })
