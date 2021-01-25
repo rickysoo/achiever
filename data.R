@@ -5,16 +5,31 @@ default_district <- '102'
 time_zone <- 'Etc/GMT-12'
 color <- '#CD202C'
 
-KPI <- data.frame(
-    Variable = c('Members', 'Retained', 'Retention', 'New', 'Growth', 'Education Goals', 'Total Goals'),
-    Name = c('Members', 'Retained Members', 'Retention', 'New Members', 'Net Growth', 'Education Goals', 'Total Goals')
-)    
+KPIs <- read.csv('KPIs.csv')  
+# KPI <- data.frame(
+#     Variable = c('Awards', 'Education Goals', 'Members', 'Retained', 'New', 'Net Growth', 'Club Growth', 'Retention', 'Total Goals'),
+#     Name = c('Education Awards', 'Education Goals', 'Members', 'Retained Members', 'New Members', 'Net Growth', 'Club Growth', 'Retention', 'Total Goals')
+# )    
 
 getKPIname <- function(var) {
-    KPI %>% 
+    KPIs %>% 
         filter(Variable == var) %>%
         pull(Name)
 }
+
+getKPIlist <- function() {
+    KPIlist <- list()
+    categories <- unique(KPIs$Category)
+
+    for (category in categories) {
+        CategoryKPIs <- subset(KPIs, Category == category)
+        # KPIlist[[length(KPIlist) + 1]] <- setNames(CategoryKPIs$Variable, CategoryKPIs$Name)
+        KPIlist[[category]] <- setNames(CategoryKPIs$Variable, CategoryKPIs$Name)
+    }
+    
+    return (KPIlist)
+}
+# getKPIlist()
 
 get_filename <- function(district) {
     return(paste0('clubs-', district, '-', substr(strptime(format(Sys.time(), tz = time_zone), '%Y-%m-%d'), 1, 12), '.csv'))
@@ -64,7 +79,8 @@ load_data_clubs <- function(district) {
             New = Mem1 + Mem2,
             Retained = Members - New,
             Retention = ifelse(Base == 0, 0, Retained / Base),
-            Growth = Members - Base,
+            NetGrowth = Members - Base,
+            ClubGrowth = ifelse(Base == 0, 0, NetGrowth / Base),
             Renewals = Due1 + Due2,
             EduGoals = CountEduGoals(Edu1, Edu2, Edu3, Edu4, Edu5, Edu6),
             MemGoals = CountMemGoals(Mem1, Mem2),

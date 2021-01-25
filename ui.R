@@ -33,42 +33,83 @@ ui <- fluidPage(
             tags$head(
                 tags$style(HTML('#showall {background-color:#004165}'))
             ),
-            actionButton('showall', 'Show All Clubs')
+            actionButton('showall', 'Show All')
         )
     ),
     
     tabsetPanel(
         tabPanel(
-            'Home',
+            'Overview',
             br(),
             
-            withLoader(DTOutput('home', width = '98%'), loader = 'pacman')
+            withLoader(DTOutput('overview', width = '98%'), loader = 'pacman')
         ),
         
         tabPanel(
-            'Clubs', 
+            'Education',
+            br(),
+            
+            withLoader(DTOutput('education', width = '98%'), loader = 'pacman')
+        ),
+        
+        tabPanel(
+            'Membership',
+            br(),
+            
+            withLoader(DTOutput('membership', width = '98%'), loader = 'pacman')
+        ),
+        
+        # tabPanel(
+        #     'Education',
+        #     
+        #     tabsetPanel(
+        #         tabPanel(
+        #             'Education Goals',
+        #             plotOutput('education_barplot'),
+        #             tableOutput('education_performance')
+        #         ),
+        #         tabPanel(
+        #             'Club Goals',
+        #             plotOutput('education_goals')
+        #         )
+        #     )
+        # ),
+        # 
+        # tabPanel(
+        #     'Membership',
+        #     
+        #     tabsetPanel(
+        #         tabPanel(
+        #             'Club Membership',
+        #             plotOutput('members_histogram')
+        #         ),
+        #         tabPanel(
+        #             'Charter Strength',
+        #             plotOutput('charter_barplot'),
+        #             tableOutput('charter_performance')
+        #         ),
+        #         tabPanel(
+        #             'Club Goals',
+        #             plotOutput('members_goals')
+        #         )
+        #     )
+        # ),
+        
+        tabPanel(
+            'Clubs',
             
             br(),
             fluidRow(
                 column(
-                    width = 6,
-                    p('View clubs on', align = 'right')
+                    width = 9,
+                    p('', align = 'right')
                 ),
                 column(
                     width = 3,
                     selectInput(
-                        inputId = 'clubs_yaxis',
+                        inputId = 'charts_xaxis',
                         label = NULL,
-                        choices = setNames(KPI$Variable, KPI$Name),
-                        selected = 'Net Growth'
-                    )
-                ),
-                column(
-                    width = 3,
-                    selectInput(
-                        inputId = 'clubs_xaxis',
-                        label = NULL,
-                        choices = setNames(KPI$Variable, KPI$Name),
+                        choices = getKPIlist(),
                         selected = 'Total Goals'
                     )
                 )
@@ -76,7 +117,7 @@ ui <- fluidPage(
             
             withLoader(plotlyOutput('clubs_performance', width = '98%'), loader = 'pacman')
         ),
-        
+
         tabPanel(
             'Areas',
             
@@ -84,14 +125,14 @@ ui <- fluidPage(
             fluidRow(
                 column(
                     width = 9,
-                    p('View areas on', align = 'right')
+                    p('', align = 'right')
                 ),
                 column(
                     width = 3,
                     selectInput(
                         inputId = 'areas_yaxis',
                         label = NULL,
-                        choices = setNames(KPI$Variable, KPI$Name),
+                        choices = getKPIlist(),
                         selected = 'Total Goals'
                     )
                 )
@@ -107,74 +148,38 @@ ui <- fluidPage(
             fluidRow(
                 column(
                     width = 9,
-                    p('View divisions on', align = 'right')
+                    p('', align = 'right')
                 ),
                 column(
                     width = 3,
                     selectInput(
                         inputId = 'divisions_yaxis',
                         label = NULL,
-                        choices = setNames(KPI$Variable, KPI$Name),
+                        choices = getKPIlist(),
                         selected = 'Total Goals'
                     )
                 )
             ),
             
             withLoader(plotlyOutput('divisions_performance', width = '98%'), loader = 'pacman')
-        ),
-        
-        tabPanel(
-            'Education',
-            
-            tabsetPanel(
-                tabPanel(
-                    'Education Goals',
-                    plotOutput('education_barplot'),
-                    tableOutput('education_performance')
-                ),
-                tabPanel(
-                    'Club Goals',
-                    plotOutput('education_goals')
-                )
-            )
-        ),
-        
-        tabPanel(
-            'Membership',
-            
-            tabsetPanel(
-                tabPanel(
-                    'Club Membership',
-                    plotOutput('members_histogram')
-                ),
-                tabPanel(
-                    'Charter Strength',
-                    plotOutput('charter_barplot'),
-                    tableOutput('charter_performance')
-                ),
-                tabPanel(
-                    'Club Goals',
-                    plotOutput('members_goals')
-                )
-            )
-        ),
-        
-        tabPanel(
-            'Achievements',
-            
-            tabsetPanel(
-                tabPanel(
-                    'Club Goals',
-                    plotOutput('goals'),
-                    tableOutput('table_goals')
-                ),
-                tabPanel(
-                    'Distinguished Clubs',
-                    plotOutput('distinguished'),
-                    tableOutput('table_distinguished')
-                )
-            )
         )
+        
+        # tabPanel(
+        #     'Achievements',
+        #     
+        #     tabsetPanel(
+        #         tabPanel(
+        #             'Club Goals',
+        #             plotOutput('goals'),
+        #             tableOutput('table_goals')
+        #         ),
+        #         tabPanel(
+        #             'Distinguished Clubs',
+        #             plotOutput('distinguished'),
+        #             tableOutput('table_distinguished')
+        #         )
+        #     )
+        # )
         
     ),
     

@@ -5,6 +5,7 @@ library(shinycustomloader)
 library(DT)
 library(ggplot2)
 library(plotly)
+library(scales)
 
 source('data.R')
 
@@ -17,6 +18,27 @@ ggplot_defaults <- theme(
 )
 
 function(input, output, session) {
+    # cdata <- session$clientData
+    
+    # get_default_district <- function() {
+    #     return('51')
+    # print(district)
+    # 
+    # if(is.null(district)) {
+    #     print(district)
+    #     default_district
+    # }
+    # else {
+    #     print(district)
+    #     district <- str_remove(district, '\\?')
+    #     print(district)
+    #     
+    #     print(default_district)
+    #     
+    #     ifelse(district %in% districts, district, default_district)
+    # }
+    # }
+    
     values <- reactiveValues(
         district = default_district,
         division = '',
@@ -32,25 +54,39 @@ function(input, output, session) {
                 desc(Goals), 
                 desc(Members), 
                 desc(EduGoals),
-                desc(Growth)
+                desc(NetGrowth)
             )
         
         df <- df %>%
             mutate(
-                Rank = seq.int(nrow(df)),
-                Retention = round(Retention, 2)
+                Rank = row_number(),
+                `Level 1` = Edu1,
+                `Level 2` = Edu2 + Edu3,
+                `Level 3` = Edu4,
+                `Level 4+` = Edu5 + Edu6,
+                Awards = Edu1 + Edu2 + Edu3 + Edu4 + Edu5 + Edu6,
+                `Awards / Base` = ifelse(Base > 0, Awards / Base, 0),
+                `Awards / Members` = ifelse(Members > 0, Awards / Members, 0)
             ) %>%
             select(
                 'Division',
                 'Area',
                 'Club',
+                'Level 1',
+                'Level 2',
+                'Level 3',
+                'Level 4+',
+                'Awards',
+                'Awards / Base',
+                'Awards / Members',
+                'Education Goals' = 'EduGoals',
                 'Base',
                 'Retained',
                 'Retention',
                 'New',
                 'Members',
-                'Growth',
-                'Education Goals' = 'EduGoals',
+                'Net Growth' = 'NetGrowth',
+                'Club Growth' = 'ClubGrowth',
                 'Membership Goals' = 'MemGoals',
                 'Training Goals' = 'TrnGoals',
                 'Admin Goals' = 'AdmGoals',
@@ -68,35 +104,96 @@ function(input, output, session) {
             { if (values$area == '') filter(., TRUE) else filter(., Area == values$area) }
     })  
     
-    output$home <- renderDT({
-            datatable(
-                load_selected_clubs(),
-                rownames = FALSE,
-                class = 'cell-border compact stripe',
-                extensions = c('Responsive'),
-
-                options = list(
-                    pageLength = 10,
-                    lengthMenu = list(
-                        c(10, 20, 30, 50, 100, nrow(load_clubs())),
-                        c(10, 20, 30, 50, 100, nrow(load_clubs()))
+    output$overview <- renderDT({
+        datatable(
+            load_selected_clubs() %>%
+                select(Division, Area, Club, Members, `Education Goals`, `Membership Goals`, `Training Goals`, `Admin Goals`, `Total Goals`, Distinguished, Rank),
+            rownames = FALSE,
+            class = 'cell-border compact stripe',
+            extensions = c('Responsive'),
+            
+            options = list(
+                pageLength = 10,
+                lengthMenu = list(
+                    c(10, 20, 30, 50, 100, nrow(load_clubs())),
+                    c(10, 20, 30, 50, 100, nrow(load_clubs()))
+                ),
+                columnDefs = list(
+                    list(
+                        className = 'dt-left',
+                        targets = 2
                     ),
-                    columnDefs = list(
-                        list(
-                            className = 'dt-left',
-                            targets = 2
-                        ),
-                        list(
-                            className = 'dt-center',
-                            targets = c(0:1, 3:10)
-                        )
+                    list(
+                        className = 'dt-center',
+                        targets = c(0:1, 3:10)
                     )
                 )
-            ) %>%
-                formatPercentage(c('Retention'), 1)
+            )
+        ) %>%
+            formatStyle(c('Total Goals'), fontWeight = 'bold')
     }) 
     
-    output$clubs_performance <- renderPlotly({
+    output$education <- renderDT({
+        datatable(
+            load_selected_clubs() %>%
+                select(Division, Area, Club, `Level 1`, `Level 2`,`Level 3`,`Level 4+`, Awards, `Awards / Base`, `Awards / Members`, `Education Goals`, Distinguished, Rank),
+            rownames = FALSE,
+            class = 'cell-border compact stripe',
+            extensions = c('Responsive'),
+            
+            options = list(
+                pageLength = 10,
+                lengthMenu = list(
+                    c(10, 20, 30, 50, 100, nrow(load_clubs())),
+                    c(10, 20, 30, 50, 100, nrow(load_clubs()))
+                ),
+                columnDefs = list(
+                    list(
+                        className = 'dt-left',
+                        targets = 2
+                    ),
+                    list(
+                        className = 'dt-center',
+                        targets = c(0:1, 3:12)
+                    )
+                )
+            )
+        ) %>%
+            formatRound(c('Awards / Base', 'Awards / Members'), 1) %>%
+            formatStyle(c('Education Goals'), fontWeight = 'bold')
+    }) 
+    
+    output$membership <- renderDT({
+        datatable(
+            load_selected_clubs() %>%
+                select(Division, Area, Club, Base, Retained, New, Members, `Net Growth`, `Club Growth`, Retention, `Membership Goals`, Distinguished, Rank),
+            rownames = FALSE,
+            class = 'cell-border compact stripe',
+            extensions = c('Responsive'),
+            
+            options = list(
+                pageLength = 10,
+                lengthMenu = list(
+                    c(10, 20, 30, 50, 100, nrow(load_clubs())),
+                    c(10, 20, 30, 50, 100, nrow(load_clubs()))
+                ),
+                columnDefs = list(
+                    list(
+                        className = 'dt-left',
+                        targets = 2
+                    ),
+                    list(
+                        className = 'dt-center',
+                        targets = c(0:1, 3:11)
+                    )
+                )
+            )
+        ) %>%
+            formatPercentage(c('Club Growth', 'Retention'), 1) %>%
+            formatStyle(c('Membership Goals'), fontWeight = 'bold')
+    }) 
+    
+    output$clubs_performance2 <- renderPlotly({
         xaxis <- input$clubs_xaxis
         yaxis <- input$clubs_yaxis
         
@@ -124,12 +221,14 @@ function(input, output, session) {
     output$areas_performance <- renderPlotly({
         data <- load_selected_clubs()
         yaxis <- input$areas_yaxis
+        percentage <- (yaxis %in% c('Retention', 'Club Growth'))
         
         viz <- ggplot(data = data, aes(x = reorder(Area, .data[[yaxis]], FUN = mean), y = .data[[yaxis]], fill = Area)) +
             geom_boxplot() +
+            { if (percentage) scale_y_continuous(labels = scales::percent_format(scale = 100)) else geom_blank() } +
             labs(
                 x = 'Area',
-                y = yaxis
+                y = getKPIname(yaxis)
             ) +
             coord_flip() +
             ggplot_defaults +
@@ -147,12 +246,14 @@ function(input, output, session) {
     output$divisions_performance <- renderPlotly({
         data <- load_selected_clubs()
         yaxis <- input$divisions_yaxis
+        percentage <- (yaxis %in% c('Retention', 'Club Growth'))
         
         viz <- ggplot(data = data, aes(x = reorder(Division, .data[[yaxis]], FUN = mean), y = .data[[yaxis]], fill = Division)) +
             geom_boxplot() +
+            { if (percentage) scale_y_continuous(labels = scales::percent_format(scale = 100)) else geom_blank() } +
             labs(
                 x = 'Division',
-                y = yaxis
+                y = getKPIname(yaxis)
             ) +
             coord_flip() +
             ggplot_defaults +
@@ -193,11 +294,21 @@ function(input, output, session) {
         values$title <- GetTitle()
         items <- districts
         
+        # query_district <- cdata$url_search
+        # 
+        # if(is.null(query_district)) {
+        #     district <- default_district
+        # }
+        # else {
+        #     query_district <- str_remove(query_district, '\\?')
+        #     district <- ifelse(query_district %in% districts, query_district, default_district)
+        # }
+        # 
         selectInput(
             inputId = 'district',
             label = NULL,
             choices = setNames(items, paste0('District ', items)),
-            selected = values$district
+            selected = values$district #district
         )
     })
     
@@ -275,6 +386,38 @@ function(input, output, session) {
         clearSearch(proxy = proxy)
         # replaceData(proxy = proxy, data = load_clubs(), resetPaging = TRUE, clearSelection = FALSE)
     })
+    
+    output$clubs_performance <- renderPlotly({
+        data <- load_selected_clubs()
+        xaxis <- input$charts_xaxis
+        histogram <- (xaxis %in% c('Awards', 'Level 1', 'Level 2', 'Level 3', 'Level 4+', 'Base', 'Members', 'New', 'Retained', 'Net Growth', 'Retention', 'Club Growth', 'Awards / Base', 'Awards / Members'))
+        percentage <- (xaxis %in% c('Retention', 'Club Growth'))
+        
+        viz <- ggplot(data = data, aes(x = .data[[xaxis]], fill = Division)) +
+            { if (histogram) geom_histogram(bins = 10) else geom_bar() } +
+            {
+                if (histogram)
+                    if (percentage)
+                        scale_x_continuous(breaks = pretty_breaks(), labels = scales::percent_format(scale = 100))
+                    else
+                        scale_x_continuous(breaks = pretty_breaks())
+                else
+                    geom_blank()
+            } +
+            labs(
+                x = getKPIname(xaxis),
+                y = 'Number of Clubs'
+            ) +
+            ggplot_defaults
+        
+        ggplotly(viz, height = 600) %>%
+            layout(
+                title = GetChartTitle('Club Performance'),
+                xaxis = list(fixedrange = TRUE),
+                yaxis = list(fixedrange = TRUE),
+                margin = 50
+            )
+})
     
     tablePerformance <- function(df_clubs, col) {
         df <- data.frame(table(df_clubs[[col]]))
@@ -517,4 +660,4 @@ function(input, output, session) {
             ggplot_defaults +
             theme(legend.position = 'none')
     })
-}
+    }
