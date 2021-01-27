@@ -5,10 +5,13 @@ library(shinycustomloader)
 library(DT)
 library(ggplot2)
 library(plotly)
+library(highcharter)
 
 source('data.R')
 
 ui <- fluidPage(
+    tags$head(includeHTML('google-analytics.html')),
+    
     theme = shinytheme('united'),
     
     titlePanel(textOutput('district_title'), windowTitle = 'Achiever\'s Dashboard | Interactive Toastmasters Dashboard For Data Analysis'),
@@ -107,7 +110,7 @@ ui <- fluidPage(
                 column(
                     width = 3,
                     selectInput(
-                        inputId = 'charts_xaxis',
+                        inputId = 'charts_xvar',
                         label = NULL,
                         choices = getKPIlist(),
                         selected = 'Total Goals'
@@ -115,6 +118,7 @@ ui <- fluidPage(
                 )
             ),
             
+            # withLoader(highchartOutput('clubs_performance', width = '98%'), loader = 'pacman')
             withLoader(plotlyOutput('clubs_performance', width = '98%'), loader = 'pacman')
         ),
 
@@ -130,7 +134,7 @@ ui <- fluidPage(
                 column(
                     width = 3,
                     selectInput(
-                        inputId = 'areas_yaxis',
+                        inputId = 'areas_yvar',
                         label = NULL,
                         choices = getKPIlist(),
                         selected = 'Total Goals'
@@ -153,7 +157,7 @@ ui <- fluidPage(
                 column(
                     width = 3,
                     selectInput(
-                        inputId = 'divisions_yaxis',
+                        inputId = 'divisions_yvar',
                         label = NULL,
                         choices = getKPIlist(),
                         selected = 'Total Goals'
@@ -162,6 +166,37 @@ ui <- fluidPage(
             ),
             
             withLoader(plotlyOutput('divisions_performance', width = '98%'), loader = 'pacman')
+        ),
+        
+        tabPanel(
+            'Chart',
+            
+            br(),
+            fluidRow(
+                column(
+                    width = 6
+                ),
+                column(
+                    width = 3,
+                    selectInput(
+                        inputId = 'chart_xvar',
+                        label = NULL,
+                        choices = getKPIlist(),
+                        selected = 'Total Goals'
+                    )
+                ),
+                column(
+                    width = 3,
+                    selectInput(
+                        inputId = 'chart_yvar',
+                        label = NULL,
+                        choices = getKPIlist(),
+                        selected = 'Members'
+                    )
+                )
+            ),
+            
+            withLoader(highchartOutput('chart', height = '600'), loader = 'pacman')
         )
         
         # tabPanel(

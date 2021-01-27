@@ -6,6 +6,7 @@ library(DT)
 library(ggplot2)
 library(plotly)
 library(scales)
+library(highcharter)
 
 source('data.R')
 
@@ -194,14 +195,14 @@ function(input, output, session) {
     }) 
     
     output$clubs_performance2 <- renderPlotly({
-        xaxis <- input$clubs_xaxis
-        yaxis <- input$clubs_yaxis
+        xvar <- input$clubs_xvar
+        yvar <- input$clubs_yvar
         
-        viz <- ggplot(data = load_selected_clubs(), aes(x = .data[[xaxis]], y = .data[[yaxis]], label = Club)) +
+        viz <- ggplot(data = load_selected_clubs(), aes(x = .data[[xvar]], y = .data[[yvar]], label = Club)) +
             geom_point(aes(color = Division, size = Members), alpha = 0.7, position = 'jitter') +
             labs(
-                x = getKPIname(xaxis),
-                y = getKPIname(yaxis)
+                x = getKPIname(xvar),
+                y = getKPIname(yvar)
             ) +
             guides(
                 size = FALSE
@@ -217,24 +218,81 @@ function(input, output, session) {
                 margin = 50
             )
     })
+    # output$clubs_performance <- renderHighchart({
+    output$clubs_performance <- renderPlotly({
+        data <- load_selected_clubs()
+        xvar <- input$charts_xvar
+        histogram <- (xvar %in% c('Awards', 'Level 1', 'Level 2', 'Level 3', 'Level 4+', 'Base', 'Members', 'New', 'Retained', 'Net Growth', 'Retention', 'Club Growth', 'Awards / Base', 'Awards / Members'))
+        percentage <- (xvar %in% c('Retention', 'Club Growth'))
+
+        # type <- ifelse(xvar %in% c('Awards', 'Level 1', 'Level 2', 'Level 3', 'Level 4+', 'Base', 'Members', 'New', 'Retained', 'Net Growth', 'Retention', 'Club Growth', 'Awards / Base', 'Awards / Members'), 'histogram', 'column')
+        # percentage <- (xvar %in% c('Retention', 'Club Growth'))
+        
+        # data2 <- data %>%
+        #     count(data[[xvar]])
+        # 
+        # colnames(data2) <- c('Column', 'n')
+        # glimpse(data2)
+        
+        # { 
+        #     if (type == 'column')
+        #     hchart(data2, type = type, hcaes(x = Column, y = n))
+        #     else hchart(data[[xvar]], type = 'histogram', name = getKPIname(xvar), group = data$Division)
+        # } %>%
+        #     # hchart(data[[xvar]], type = 'histogram', name = getKPIname(xvar), color = data$Division) %>%
+        #     # hchart(data, type = type, hcaes(x = Column, y = n)) %>%
+        #     hc_title(text = GetChartTitle('Club Performance'), align = 'center', style = list(fontWeight = 'bold')) %>%
+        #     hc_xAxis(title = list(text = getKPIname(xvar))) %>%
+        #     hc_yAxis(title = list(text = 'Number of Clubs')) %>%
+        #     hc_add_theme(hc_theme_ffx()) %>%
+        #     hc_tooltip(shared = TRUE)
+            # hc_tooltip(shared = TRUE, pointFormat = '{point.y}')
+            
+        
+        viz <- ggplot(data = data, aes(x = .data[[xvar]], fill = Division)) +
+            { if (histogram) geom_histogram(bins = 10) else geom_bar() } +
+            {
+                if (histogram)
+                    if (percentage)
+                        scale_x_continuous(breaks = pretty_breaks(), labels = scales::percent_format(scale = 100))
+                    else
+                        scale_x_continuous(breaks = pretty_breaks())
+                else
+                    geom_blank()
+            } +
+            labs(
+                x = getKPIname(xvar),
+                y = 'Number of Clubs'
+            ) +
+            ggplot_defaults
+
+        ggplotly(viz, height = 600) %>%
+            layout(
+                title = GetChartTitle('Club Performance'),
+                xaxis = list(fixedrange = TRUE),
+                yaxis = list(fixedrange = TRUE),
+                margin = 50
+            )
+    })
     
     output$areas_performance <- renderPlotly({
         data <- load_selected_clubs()
-        yaxis <- input$areas_yaxis
-        percentage <- (yaxis %in% c('Retention', 'Club Growth'))
+        yvar <- input$areas_yvar
+        percentage <- (yvar %in% c('Retention', 'Club Growth'))
         
-        viz <- ggplot(data = data, aes(x = reorder(Area, .data[[yaxis]], FUN = mean), y = .data[[yaxis]], fill = Area)) +
+        viz <- ggplot(data = data, aes(x = reorder(Area, .data[[yvar]], FUN = mean), y = .data[[yvar]], fill = Area, label = Club)) +
             geom_boxplot() +
+            geom_jitter(position = position_jitter(0.2)) +
             { if (percentage) scale_y_continuous(labels = scales::percent_format(scale = 100)) else geom_blank() } +
             labs(
                 x = 'Area',
-                y = getKPIname(yaxis)
+                y = getKPIname(yvar)
             ) +
             coord_flip() +
             ggplot_defaults +
             theme(legend.position = 'none')
         
-        ggplotly(viz, height = nrow(data) * 10 + 250) %>%
+        ggplotly(viz, height = nrow(data) * 10 + 250, tooltip = c('label', 'y')) %>%
             layout(
                 title = GetChartTitle('Area Performance'),
                 xaxis = list(fixedrange = TRUE),
@@ -245,27 +303,48 @@ function(input, output, session) {
     
     output$divisions_performance <- renderPlotly({
         data <- load_selected_clubs()
-        yaxis <- input$divisions_yaxis
-        percentage <- (yaxis %in% c('Retention', 'Club Growth'))
+        yvar <- input$divisions_yvar
+        percentage <- (yvar %in% c('Retention', 'Club Growth'))
         
-        viz <- ggplot(data = data, aes(x = reorder(Division, .data[[yaxis]], FUN = mean), y = .data[[yaxis]], fill = Division)) +
+        viz <- ggplot(data = data, aes(x = reorder(Division, .data[[yvar]], FUN = mean), y = .data[[yvar]], fill = Division, label = Club)) +
             geom_boxplot() +
+            geom_jitter(position = position_jitter(0.2)) +
             { if (percentage) scale_y_continuous(labels = scales::percent_format(scale = 100)) else geom_blank() } +
             labs(
                 x = 'Division',
-                y = getKPIname(yaxis)
+                y = getKPIname(yvar)
             ) +
             coord_flip() +
             ggplot_defaults +
             theme(legend.position = 'none')
         
-        ggplotly(viz, height = nrow(data) * 2 + 250) %>%
+        ggplotly(viz, height = nrow(data) * 5 + 250, tooltip = c('label', 'y')) %>%
             layout(
                 title = GetChartTitle('Division Performance'),
                 xaxis = list(fixedrange = TRUE),
                 yaxis = list(fixedrange = TRUE),
                 margin = 50
             )
+    })
+    
+    output$chart <- renderHighchart({
+        data <- load_selected_clubs()
+
+        xvar <- input$chart_xvar
+        yvar <- input$chart_yvar
+        xKPI <- getKPIname(xvar)
+        yKPI <- getKPIname(yvar)
+        
+        # fit <- lm(yvar ~ xvar, data = data)
+        
+        data %>%
+            hchart(type = 'scatter', hcaes(x = .data[[xvar]], y = .data[[yvar]], group = Division)) %>%
+            # hc_add_series(fit, type = 'line', hcaes(x = .data[[xvar]], y = .fitted), name = 'Fit', id = 'fit') %>%
+            hc_title(text = GetChartTitle('Club Performance'), align = 'center', style = list(fontWeight = 'bold')) %>%
+            hc_xAxis(title = list(text = xKPI, style = list(fontWeight = 'bold'))) %>%
+            hc_yAxis(title = list(text = yKPI, style = list(fontWeight = 'bold'))) %>%
+            # hc_add_theme(hc_theme_ffx()) %>%
+            hc_tooltip(shared = TRUE, pointFormat = paste0('Division {series.name}<br>{point.Club}<br><br>', xKPI, ': {point.x}', '<br>', yKPI, ': ', '{point.y}'))
     })
     
     GetTitle <- function() {
@@ -386,38 +465,6 @@ function(input, output, session) {
         clearSearch(proxy = proxy)
         # replaceData(proxy = proxy, data = load_clubs(), resetPaging = TRUE, clearSelection = FALSE)
     })
-    
-    output$clubs_performance <- renderPlotly({
-        data <- load_selected_clubs()
-        xaxis <- input$charts_xaxis
-        histogram <- (xaxis %in% c('Awards', 'Level 1', 'Level 2', 'Level 3', 'Level 4+', 'Base', 'Members', 'New', 'Retained', 'Net Growth', 'Retention', 'Club Growth', 'Awards / Base', 'Awards / Members'))
-        percentage <- (xaxis %in% c('Retention', 'Club Growth'))
-        
-        viz <- ggplot(data = data, aes(x = .data[[xaxis]], fill = Division)) +
-            { if (histogram) geom_histogram(bins = 10) else geom_bar() } +
-            {
-                if (histogram)
-                    if (percentage)
-                        scale_x_continuous(breaks = pretty_breaks(), labels = scales::percent_format(scale = 100))
-                    else
-                        scale_x_continuous(breaks = pretty_breaks())
-                else
-                    geom_blank()
-            } +
-            labs(
-                x = getKPIname(xaxis),
-                y = 'Number of Clubs'
-            ) +
-            ggplot_defaults
-        
-        ggplotly(viz, height = 600) %>%
-            layout(
-                title = GetChartTitle('Club Performance'),
-                xaxis = list(fixedrange = TRUE),
-                yaxis = list(fixedrange = TRUE),
-                margin = 50
-            )
-})
     
     tablePerformance <- function(df_clubs, col) {
         df <- data.frame(table(df_clubs[[col]]))

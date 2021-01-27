@@ -6,10 +6,6 @@ time_zone <- 'Etc/GMT-12'
 color <- '#CD202C'
 
 KPIs <- read.csv('KPIs.csv')  
-# KPI <- data.frame(
-#     Variable = c('Awards', 'Education Goals', 'Members', 'Retained', 'New', 'Net Growth', 'Club Growth', 'Retention', 'Total Goals'),
-#     Name = c('Education Awards', 'Education Goals', 'Members', 'Retained Members', 'New Members', 'Net Growth', 'Club Growth', 'Retention', 'Total Goals')
-# )    
 
 getKPIname <- function(var) {
     KPIs %>% 
