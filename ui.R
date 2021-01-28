@@ -5,7 +5,9 @@ library(shinycustomloader)
 library(DT)
 library(ggplot2)
 library(plotly)
+library(scales)
 library(highcharter)
+# library(broom)
 
 source('data.R')
 
@@ -34,13 +36,15 @@ ui <- fluidPage(
         column(
             width = 3,
             tags$head(
-                tags$style(HTML('#showall {background-color:#004165}'))
+                tags$style(HTML('#showall {background-color: #004165}'))
             ),
             actionButton('showall', 'Show All')
         )
     ),
     
     tabsetPanel(
+        id = 'tab',
+        
         tabPanel(
             'Overview',
             br(),
@@ -118,8 +122,8 @@ ui <- fluidPage(
                 )
             ),
             
-            # withLoader(highchartOutput('clubs_performance', width = '98%'), loader = 'pacman')
-            withLoader(plotlyOutput('clubs_performance', width = '98%'), loader = 'pacman')
+            withLoader(highchartOutput('clubs_performance', height = '600'), loader = 'pacman')
+            # withLoader(plotlyOutput('clubs_performance', width = '98%'), loader = 'pacman')
         ),
 
         tabPanel(
@@ -166,6 +170,7 @@ ui <- fluidPage(
             ),
             
             withLoader(plotlyOutput('divisions_performance', width = '98%'), loader = 'pacman')
+            # withLoader(highchartOutput('divisions_performance', width = '98%'), loader = 'pacman')
         ),
         
         tabPanel(

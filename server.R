@@ -7,6 +7,7 @@ library(ggplot2)
 library(plotly)
 library(scales)
 library(highcharter)
+# library(broom)
 
 source('data.R')
 
@@ -44,7 +45,8 @@ function(input, output, session) {
         district = default_district,
         division = '',
         area = '',
-        title = paste0('District ', default_district)
+        title = paste0('District ', default_district),
+        search = ''
     )
     
     load_clubs <- reactive({
@@ -218,61 +220,73 @@ function(input, output, session) {
                 margin = 50
             )
     })
-    # output$clubs_performance <- renderHighchart({
-    output$clubs_performance <- renderPlotly({
+    output$clubs_performance <- renderHighchart({
+        # output$clubs_performance <- renderPlotly({
         data <- load_selected_clubs()
         xvar <- input$charts_xvar
-        histogram <- (xvar %in% c('Awards', 'Level 1', 'Level 2', 'Level 3', 'Level 4+', 'Base', 'Members', 'New', 'Retained', 'Net Growth', 'Retention', 'Club Growth', 'Awards / Base', 'Awards / Members'))
-        percentage <- (xvar %in% c('Retention', 'Club Growth'))
-
-        # type <- ifelse(xvar %in% c('Awards', 'Level 1', 'Level 2', 'Level 3', 'Level 4+', 'Base', 'Members', 'New', 'Retained', 'Net Growth', 'Retention', 'Club Growth', 'Awards / Base', 'Awards / Members'), 'histogram', 'column')
+        xKPI <- getKPIname(xvar)
+        
+        # histogram <- (xvar %in% c('Awards', 'Level 1', 'Level 2', 'Level 3', 'Level 4+', 'Base', 'Members', 'New', 'Retained', 'Net Growth', 'Retention', 'Club Growth', 'Awards / Base', 'Awards / Members'))
         # percentage <- (xvar %in% c('Retention', 'Club Growth'))
         
-        # data2 <- data %>%
-        #     count(data[[xvar]])
+        type <- ifelse(xvar %in% c('Awards', 'Level 1', 'Level 2', 'Level 3', 'Level 4+', 'Base', 'Members', 'New', 'Retained', 'Net Growth', 'Retention', 'Club Growth', 'Awards / Base', 'Awards / Members'), 'histogram', 'column')
+        percentage <- (xvar %in% c('Retention', 'Club Growth'))
+        
+        data2 <- data %>%
+            count(data[[xvar]], Division)
+        
+        colnames(data2) <- c('xvar', 'Division', 'n')
+        
+        {
+            if (type == 'column')
+                hchart(data2, type = type, hcaes(x = xvar, y = n, group = Division)) %>%
+                hc_colors(DivisionColors) %>%
+                hc_tooltip(shared = FALSE, headerFormat = '', pointFormat = paste0(xKPI, ': {point.x}<br>Division {series.name}<br>Number of clubs: {point.y}')) %>%
+                hc_plotOptions(series = list(stacking = 'normal'))
+            else if (type == 'histogram')
+                # hchart(data, type = 'histogram', name = xKPI, hcaes(x = .data[[xvar]]))
+                hchart(data[[xvar]], type = 'histogram', name = xKPI, color = '#004165') %>%
+                # hchart(data, type = 'area', hcaes(x = .data[[xvar]], y = Members, group = Division)) %>%
+                hc_plotOptions(series = list(stacking = 'normal')) %>%
+                hc_tooltip(borderWidth = 1, sort = TRUE, crosshairs = TRUE, headerFormat = '', pointFormat = paste0('Number of clubs: {point.y}')) %>%
+                hc_legend(enabled = FALSE)
+                
+        } %>%
+            hc_title(text = GetChartTitle('Club Performance'), align = 'center', style = list(fontWeight = 'bold')) %>%
+            hc_xAxis(title = list(text = xKPI, style = list(fontWeight = 'bold'))) %>%
+            # {
+            #     if (percentage)
+            #         TRUE
+            #         # hc_xAxis(label = scales::percent_format(scale = 100))
+            #     else
+            #         TRUE
+            # } %>%
+            hc_yAxis(title = list(text = 'Number of Clubs', style = list(fontWeight = 'bold')))
+        
+        # viz <- ggplot(data = data, aes(x = .data[[xvar]], fill = Division)) +
+        #     { if (histogram) geom_histogram(bins = 10) else geom_bar() } +
+        #     {
+        #         if (histogram)
+        #             if (percentage)
+        #                 scale_x_continuous(breaks = pretty_breaks(), labels = scales::percent_format(scale = 100))
+        #             else
+        #                 scale_x_continuous(breaks = pretty_breaks())
+        #         else
+        #             geom_blank()
+        #     } +
+        #     labs(
+        #         x = getKPIname(xvar),
+        #         y = 'Number of Clubs'
+        #     ) +
+        #     ggplot_defaults
         # 
-        # colnames(data2) <- c('Column', 'n')
-        # glimpse(data2)
-        
-        # { 
-        #     if (type == 'column')
-        #     hchart(data2, type = type, hcaes(x = Column, y = n))
-        #     else hchart(data[[xvar]], type = 'histogram', name = getKPIname(xvar), group = data$Division)
-        # } %>%
-        #     # hchart(data[[xvar]], type = 'histogram', name = getKPIname(xvar), color = data$Division) %>%
-        #     # hchart(data, type = type, hcaes(x = Column, y = n)) %>%
-        #     hc_title(text = GetChartTitle('Club Performance'), align = 'center', style = list(fontWeight = 'bold')) %>%
-        #     hc_xAxis(title = list(text = getKPIname(xvar))) %>%
-        #     hc_yAxis(title = list(text = 'Number of Clubs')) %>%
-        #     hc_add_theme(hc_theme_ffx()) %>%
-        #     hc_tooltip(shared = TRUE)
-            # hc_tooltip(shared = TRUE, pointFormat = '{point.y}')
-            
-        
-        viz <- ggplot(data = data, aes(x = .data[[xvar]], fill = Division)) +
-            { if (histogram) geom_histogram(bins = 10) else geom_bar() } +
-            {
-                if (histogram)
-                    if (percentage)
-                        scale_x_continuous(breaks = pretty_breaks(), labels = scales::percent_format(scale = 100))
-                    else
-                        scale_x_continuous(breaks = pretty_breaks())
-                else
-                    geom_blank()
-            } +
-            labs(
-                x = getKPIname(xvar),
-                y = 'Number of Clubs'
-            ) +
-            ggplot_defaults
-
-        ggplotly(viz, height = 600) %>%
-            layout(
-                title = GetChartTitle('Club Performance'),
-                xaxis = list(fixedrange = TRUE),
-                yaxis = list(fixedrange = TRUE),
-                margin = 50
-            )
+        # ggplotly(viz, height = 600) %>%
+        #     layout(
+        #         title = GetChartTitle('Club Performance'),
+        #         xaxis = list(fixedrange = TRUE),
+        #         yaxis = list(fixedrange = TRUE),
+        #         margin = 50
+        #     )
     })
     
     output$areas_performance <- renderPlotly({
@@ -329,22 +343,24 @@ function(input, output, session) {
     
     output$chart <- renderHighchart({
         data <- load_selected_clubs()
-
+        
         xvar <- input$chart_xvar
         yvar <- input$chart_yvar
         xKPI <- getKPIname(xvar)
         yKPI <- getKPIname(yvar)
         
-        # fit <- lm(yvar ~ xvar, data = data)
+        # model <- loess(yvar ~ xvar, data = data)
+        # fit <- augment(model) %>% arrange(xvar)
         
         data %>%
             hchart(type = 'scatter', hcaes(x = .data[[xvar]], y = .data[[yvar]], group = Division)) %>%
             # hc_add_series(fit, type = 'line', hcaes(x = .data[[xvar]], y = .fitted), name = 'Fit', id = 'fit') %>%
+            hc_colors(DivisionColors) %>%
             hc_title(text = GetChartTitle('Club Performance'), align = 'center', style = list(fontWeight = 'bold')) %>%
             hc_xAxis(title = list(text = xKPI, style = list(fontWeight = 'bold'))) %>%
             hc_yAxis(title = list(text = yKPI, style = list(fontWeight = 'bold'))) %>%
             # hc_add_theme(hc_theme_ffx()) %>%
-            hc_tooltip(shared = TRUE, pointFormat = paste0('Division {series.name}<br>{point.Club}<br><br>', xKPI, ': {point.x}', '<br>', yKPI, ': ', '{point.y}'))
+            hc_tooltip(shared = TRUE, headerFormat = '', pointFormat = paste0('Division {series.name}<br>{point.Club}<br><br>', xKPI, ': {point.x}', '<br>', yKPI, ': ', '{point.y}'))
     })
     
     GetTitle <- function() {
@@ -461,10 +477,46 @@ function(input, output, session) {
         updateSelectInput(session, inputId = 'division', selected = '')
         updateSelectInput(session, inputId = 'area', selected = '')
         
-        proxy <- dataTableProxy('home')
-        clearSearch(proxy = proxy)
-        # replaceData(proxy = proxy, data = load_clubs(), resetPaging = TRUE, clearSelection = FALSE)
+        for (table in c('overview', 'education', 'membership')) {
+            proxy <- dataTableProxy(table)
+            clearSearch(proxy = proxy)
+            reloadData(proxy, resetPaging = TRUE, clearSelection = 'all')
+            # replaceData(proxy = proxy, data = load_clubs(), resetPaging = TRUE, clearSelection = FALSE)
+        }
     })
+    
+    observeEvent(
+        c(input$overview_search),
+        {
+            values$search <- input$overview_search
+        }
+    )   
+
+    observeEvent(
+        c(input$education_search),
+        {
+            values$search <- input$education_search
+        }
+    )   
+    
+    observeEvent(
+        c(input$membership_search),
+        {
+            values$search <- input$membership_search
+        }
+    )   
+    
+    observeEvent(
+        input$tab,
+        {
+            if (input$tab %in% c('Overview', 'Education', 'Membership')) {
+                for (table in c('overview', 'education', 'membership')) {
+                    proxy <- dataTableProxy(table)
+                    updateSearch(proxy, keywords = list(global = values$search))
+                }
+            }
+        }
+    )
     
     tablePerformance <- function(df_clubs, col) {
         df <- data.frame(table(df_clubs[[col]]))
@@ -707,4 +759,4 @@ function(input, output, session) {
             ggplot_defaults +
             theme(legend.position = 'none')
     })
-    }
+}
